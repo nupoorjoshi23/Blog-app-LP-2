@@ -1,0 +1,86 @@
+FULL-STACK
+OS: Ubuntu | Type: t2.micro | Key Pair: Your .pem key.
+Network Settings: Check Allow SSH and Allow HTTP.
+Launch the instance.
+Crucial Firewall Step: Go to the instance's Security Group -> Edit Inbound Rules -> Add Rule.
+Type: Custom TCP
+Port Range: 5000
+Source: 0.0.0.0/0 (Anywhere)
+Save rules.
+1. Connect to EC2
+chmod 400 your-key.pem
+ssh -i "your-key.pem" ubuntu@<your-public-ip>
+2. Install Server Dependencies
+sudo apt update
+sudo apt install nodejs npm git -y
+sudo npm install -g pm2
+3. Clone & Setup Backend
+git clone https://github.com/vedbabar/Blog-app-LP-2.git
+cd Blog-app-LP-2/backend
+npm install
+nano .env 
+(Paste your MongoDB URI, JWT secret, and Port here, then save with Ctrl+O, Enter, Ctrl+X)
+mongodb+srv://nupoorjoshi2_db_user:MhVWxOSvsQzon9md@cluster0.tqkqqso.mongodb.net/?appName=Cluster0
+4. Setup & Build Frontend
+cd ../frontend
+npm install
+npm run build
+5. Start Application
+cd ../backend
+pm2 start server.js --name "blog-app"
+pm2 save
+
+STATIC WEBSITE
+EC2 Setup & Connection
+Launch Instance: Start an Ubuntu t2.micro EC2 instance and download your .pem key pair.
+Configure Firewall: Enable "Allow SSH" (from My IP) and "Allow HTTP" (from Anywhere).
+Connect & Deploy: SSH into your instance, install Nginx, and replace the default HTML file.
+Test: Open http://<your-public-ip> in your browser.
+Sequential Terminal Commands
+1. Connect to EC2 (Run on your local terminal)
+chmod 400 my-web-key.pem
+ssh -i "my-web-key.pem" ubuntu@<your-public-ip>
+2. Install & Start Nginx Server
+sudo apt update
+sudo apt install nginx -y
+sudo systemctl start nginx
+sudo systemctl enable nginx
+3. Deploy the HTML Code
+cd /var/www/html
+sudo rm index.nginx-debian.html
+sudo nano index.html
+
+FILE TRANSFER
+EC2 Setup & Configuration
+Launch Instances: Start two Ubuntu t2.micro EC2 instances in the Default VPC using your .pem key.
+Configure Firewall: In their shared Security Group, allow SSH (22) and All ICMP - IPv4 where the Source is the Security Group's own ID, plus SSH from your local IP.
+Connect: Open two separate terminals and SSH into VM1 and VM2 using their Public IPs.
+Generate Key: Create an ed25519 SSH key pair on VM1.
+Authorize Key: Copy VM1's public key and paste it into VM2's authorized_keys file.
+Secure VM2: Apply strict chmod permissions to VM2's .ssh folder and keys.
+Transfer File: Create a text file on VM1 and send it to VM2's Private IP using scp.
+
+Sequential Terminal Commands
+1. Connect to Both Instances (Run on your local machine in two separate terminals)
+# Terminal 1 (VM1)
+ssh -i "key.pem" ubuntu@<VM1-Public-IP>
+# Terminal 2 (VM2)
+ssh -i "key.pem" ubuntu@<VM2-Public-IP>
+2. Generate & Copy Key (Run in Terminal 1 - VM1)
+ssh-keygen -t ed25519
+# Press Enter three times to accept defaults
+cat ~/.ssh/id_ed25519.pub
+# Copy the exact output printed to the screen
+3. Authorize Key & Secure (Run in Terminal 2 - VM2)
+nano ~/.ssh/authorized_keys
+# Paste the copied key on a new line, then save (Ctrl+O, Enter, Ctrl+X)
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+4. Create & Transfer File (Run in Terminal 1 - VM1)
+ping <VM2-Private-IP> 
+# Press Ctrl+C to stop pinging after verifying connection
+echo "Hello from VM1, file transfer successful!" > secret_file.txt
+scp secret_file.txt ubuntu@<VM2-Private-IP>:/home/ubuntu/
+5. Verify Transfer (Run in Terminal 2 - VM2)
+ls
+cat secret_file.txt
